@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Music Distribution Agreement - Jonom Digital</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    #agreement {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      max-width: 800px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h2 {
+      text-align: center;
+      font-size: 24px;
+    }
+    label {
+      font-weight: bold;
+      margin-top: 10px;
+      display: block;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    canvas {
+      border: 1px solid #000;
+      border-radius: 5px;
+      width: 100%;
+      height: 200px;
+      touch-action: none;
+    }
+    .btn {
+      background-color: #007BFF;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 16px;
+      margin: 10px 0;
+      width: 100%;
+    }
+    .btn:hover {
+      background-color: #0056b3;
+    }
+    ul {
+      margin-top: 0;
+    }
+    @media(max-width: 600px) {
+      h2 {
+        font-size: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div id="agreement">
+  <h2>Digital Music Distribution Agreement</h2>
+
+  <label for="artistName">Artist / Record Label Name:</label>
+  <input type="text" id="artistName" placeholder="Enter name" required>
+
+  <label for="startDate">Agreement Start Date:</label>
+  <input type="date" id="startDate" required>
+
+  <label for="endDate">Agreement Expiry Date:</label>
+  <input type="date" id="endDate" required>
+
+  <div id="agreementText">
+    <p>
+      This agreement is made between <strong>Jonom Digital</strong> ("Distributor") and 
+      <span id="fillArtistName">[Artist Name]</span> ("Artist/Label") on 
+      <span id="fillStartDate">[Start Date]</span>.
+    </p>
+    <p>
+      Under this agreement, the Artist/Label grants Jonom Digital the rights to distribute their music to digital platforms worldwide.
+    </p>
+    <p>
+      Revenue generated from distributed content will be shared as follows:
+      <ul>
+        <li>80% to the Artist/Record Label</li>
+        <li>20% retained by Jonom Digital as service fee</li>
+      </ul>
+    </p>
+    <p>
+      This agreement remains in effect until <span id="fillEndDate">[Expiry Date]</span>, unless terminated earlier by mutual consent.
+    </p>
+    <p>Both parties agree to the terms above and confirm by digital signature.</p>
+  </div>
+
+  <h4>Digital Signature</h4>
+  <canvas id="signatureCanvas"></canvas>
+  <button class="btn" onclick="clearSignature()">Clear Signature</button>
+
+  <button class="btn" onclick="generatePDF()">Download Signed Agreement (PDF)</button>
+</div>
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.5/dist/signature_pad.umd.min.js"></script>
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+  const canvas = document.getElementById('signatureCanvas');
+  const signaturePad = new SignaturePad(canvas, {
+    backgroundColor: 'rgba(255, 255, 255, 0)',
+    penColor: 'black'
+  });
+
+  function clearSignature() {
+    signaturePad.clear();
+  }
+
+  async function generatePDF() {
+    const artist = document.getElementById('artistName').value.trim();
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+
+    if (!artist || !startDate || !endDate || signaturePad.isEmpty()) {
+      alert("Please complete all fields and provide a signature.");
+      return;
+    }
+
+    document.getElementById('fillArtistName').innerText = artist;
+    document.getElementById('fillStartDate').innerText = startDate;
+    document.getElementById('fillEndDate').innerText = endDate;
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF();
+
+    const agreementElement = document.getElementById('agreement');
+    const canvasData = signaturePad.toDataURL('image/png');
+
+    // First render HTML to canvas
+    await html2canvas(agreementElement, { scale: 2 }).then(canvas => {
+      const imgData = canvas.toDataURL('image/png');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, 'PNG', 10, 10, pdfWidth - 20, pdfHeight);
+    });
+
+    // Save PDF
+    pdf.save(`${artist}_Distribution_Agreement.pdf`);
+  }
+</script>
+
+</body>
+</html>
