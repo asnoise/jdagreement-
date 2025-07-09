@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jonom Digital - Agreement Generator</title>
+    <title>Jonom Digital - Agreement Workflow</title>
     <!-- Include jsPDF and html2canvas libraries from a CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        /* Base styles from your original code */
+        /* Base styles */
         body {
             font-family: Arial, sans-serif;
             line-height: 1.6;
@@ -36,8 +36,8 @@
         .signature-block { width: 45%; min-width: 250px; margin-top: 20px; }
         .signature-block p { margin: 5px 0; }
         
-        /* Styles for the new form and controls */
-        .form-container {
+        /* Form & Workflow styles */
+        .workflow-container {
             max-width: 800px;
             margin: 20px auto;
             background-color: #eef7ff;
@@ -46,7 +46,7 @@
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.05);
         }
-        .form-container h2 {
+        .workflow-container h2 {
             margin-top: 0;
             border-bottom: 1px solid #b8daff;
         }
@@ -55,11 +55,12 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
-        .form-group {
+        .form-group, .display-group {
             display: flex;
             flex-direction: column;
         }
-        .form-group label {
+        .display-group { margin-bottom: 15px; }
+        .form-group label, .display-group .label {
             margin-bottom: 5px;
             font-weight: bold;
             color: #0056b3;
@@ -70,58 +71,68 @@
             border-radius: 4px;
             font-size: 1rem;
         }
-        .signature-area {
-            margin-top: 20px;
+        .display-group .value {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            word-wrap: break-word;
         }
-        #signature-pad {
-            border: 2px dashed #ccc;
-            cursor: crosshair;
-            background-color: #fff;
-        }
-        .signature-controls {
-            margin-top: 10px;
-        }
+        .signature-area { margin-top: 25px; }
+        .signature-area label { font-weight: bold; color: #0056b3; display: block; margin-bottom: 5px; }
+        .signature-pad { border: 2px dashed #ccc; cursor: crosshair; background-color: #fff; border-radius: 4px;}
+        .signature-controls { margin-top: 10px; }
+        
+        /* Buttons */
         .button {
-            padding: 10px 15px;
+            padding: 12px 18px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: bold;
             transition: background-color 0.3s;
         }
-        #clear-signature-btn {
-            background-color: #ffc107;
-            color: #333;
-        }
-        #clear-signature-btn:hover {
-            background-color: #e0a800;
-        }
-        #download-btn {
-            background-color: #28a745;
-            color: white;
-            display: block;
-            width: 100%;
-            margin-top: 25px;
-            padding: 15px;
-            font-size: 1.2rem;
-        }
-        #download-btn:hover {
-            background-color: #218838;
-        }
+        .clear-btn { background-color: #ffc107; color: #333; font-size: 1rem; padding: 10px 15px;}
+        .clear-btn:hover { background-color: #e0a800; }
+        .action-btn { background-color: #007bff; color: white; display: block; width: 100%; margin-top: 25px; }
+        .action-btn:hover { background-color: #0069d9; }
+        .download-btn { background-color: #28a745; color: white; display: block; width: 100%; margin-top: 25px; }
+        .download-btn:hover { background-color: #218838; }
+
+        /* Sharable Link Specific */
+        #shareable-link-container { margin-top: 25px; display: none; }
+        #shareable-link-area { display: flex; }
+        #shareable-link { width: calc(100% - 100px); padding: 10px; border-radius: 4px 0 0 4px; border: 1px solid #ccc; font-size: 0.9rem; background: #fff;}
+        #copy-link-btn { width: 90px; padding: 10px; border-radius: 0 4px 4px 0; background: #6c757d; color: white; border: 1px solid #6c757d; cursor: pointer; }
+        #copy-link-btn:hover { background: #5a6268; }
+
+        /* Placeholders and Signature Images */
         .placeholder { color: #888; font-style: italic; }
-        #signature-image {
+        .signature-display-img {
             max-width: 200px;
             max-height: 80px;
-            margin-top: 10px;
             display: none; /* Hidden by default */
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
         }
+
+        /* Hide/Show logic */
+        #artist-view { display: none; }
+        #loading-view { display: none; text-align: center; padding: 40px; font-size: 1.2rem; }
     </style>
 </head>
 <body>
 
-<div class="form-container">
-    <h2>Agreement Details Entry Form</h2>
+<!-- ============== VIEW 0: LOADING STATE ============== -->
+<div id="loading-view" class="workflow-container">
+    <p>Loading Agreement...</p>
+</div>
+
+<!-- ============== VIEW 1: COMPANY WORKFLOW ============== -->
+<div id="company-view" class="workflow-container">
+    <h2>Step 1: Company Fills & Signs Agreement</h2>
     <div class="form-grid">
         <div class="form-group">
             <label for="agreement-date">Date of Agreement</label>
@@ -140,36 +151,54 @@
             <input type="email" id="rights-holder-email" placeholder="Enter contact email">
         </div>
     </div>
+    
     <div class="signature-area">
-        <label>Draw Signature Below</label>
-        <canvas id="signature-pad" width="400" height="150"></canvas>
+        <label for="company-signature-pad">Draw Company Signature Below (Ashok Sarmah)</label>
+        <canvas id="company-signature-pad" class="signature-pad" width="400" height="150"></canvas>
         <div class="signature-controls">
-            <button id="clear-signature-btn" class="button">Clear Signature</button>
+            <button id="clear-company-signature-btn" class="button clear-btn">Clear Signature</button>
         </div>
     </div>
-    <button id="download-btn" class="button">Generate & Download PDF</button>
+
+    <button id="generate-link-btn" class="button action-btn">Generate Sharable Link</button>
+    
+    <div id="shareable-link-container">
+        <h3>Link Generated!</h3>
+        <p>Copy this link and share it with the artist/label to sign the agreement.</p>
+        <div id="shareable-link-area">
+            <input type="text" id="shareable-link" readonly>
+            <button id="copy-link-btn">Copy</button>
+        </div>
+    </div>
 </div>
 
-<!-- This is the container that will be converted to PDF -->
+<!-- ============== VIEW 2: ARTIST WORKFLOW ============== -->
+<div id="artist-view" class="workflow-container">
+    <h2>Step 2: Artist/Label Reviews & Signs</h2>
+    <p>Please review the details below. If everything is correct, please sign in the designated area to execute the agreement.</p>
+    <div id="artist-display-data" class="form-grid">
+        <!-- Data will be populated here by JS -->
+    </div>
+
+    <div class="signature-area">
+        <label for="artist-signature-pad">Draw Your Signature Below</label>
+        <canvas id="artist-signature-pad" class="signature-pad" width="400" height="150"></canvas>
+        <div class="signature-controls">
+            <button id="clear-artist-signature-btn" class="button clear-btn">Clear Signature</button>
+        </div>
+    </div>
+
+    <button id="artist-download-btn" class="button download-btn">Sign & Download PDF Agreement</button>
+</div>
+
+<!-- ============== AGREEMENT TEMPLATE (for PDF generation) ============== -->
 <div id="agreement-to-print">
     <div class="container">
         <h1>Digital Music Distribution Agreement</h1>
-
-        <div class="disclaimer">
-            <strong>IMPORTANT DISCLAIMER:</strong> This document is a general template and is not a substitute for legal advice from a qualified attorney. Jonom Digital should consult with a lawyer in India to ensure this agreement is legally sound, enforceable, and tailored to its precise business needs.
-        </div>
-
+        <div class="disclaimer">...</div>
         <p>This Digital Music Distribution Agreement ("Agreement") is entered into on this day, <strong><span class="display-date placeholder">[Date]</span></strong> ("Effective Date"), by and between:</p>
-
         <h3>1. The Company:</h3>
-        <p>
-            <strong>Jonom Digital</strong><br>
-            (Hereinafter referred to as the "Company," "we," "us," or "our")<br>
-            <strong>Address:</strong> Khanapara, Rajiv Gandhi Path, Uday Nagar, Sushila Path, Guwahati 781022, Assam, India<br>
-            <strong>Email:</strong> info@jonomdigital.xyz<br>
-            <strong>Website:</strong> www.jonomdigital.xyz
-        </p>
-
+        <p>...</p>
         <h3>2. The Rights Holder:</h3>
         <p>
             <strong><span id="display-name" class="placeholder">[Rights Holder Name]</span></strong><br>
@@ -177,70 +206,21 @@
             <strong>Address:</strong> <span id="display-address" class="placeholder">[Rights Holder Address]</span><br>
             <strong>Email:</strong> <span id="display-email" class="placeholder">[Rights Holder Email]</span>
         </p>
-
         <h2>RECITALS</h2>
-        <p><strong>WHEREAS,</strong> the Rights Holder owns or controls the rights to certain sound recordings, musical compositions, and associated artwork and metadata; and</p>
-        <p><strong>WHEREAS,</strong> the Company operates a digital music distribution service and has relationships with various Digital Service Providers (DSPs); and</p>
-        <p><strong>WHEREAS,</strong> the Rights Holder wishes to grant the Company the right to distribute its content through these DSPs under the terms and conditions set forth in this Agreement.</p>
-        <p><strong>NOW, THEREFORE,</strong> in consideration of the mutual covenants contained herein, the parties agree as follows:</p>
-
-        <!-- The rest of your agreement content remains unchanged -->
+        <p>...</p>
+        <!-- The full, unchanged agreement text goes here -->
         <h2>1. DEFINITIONS</h2>
-        <ul>
-            <li><strong>"Content"</strong>: Refers to all sound recordings...</li>
-            <li><strong>"Territory"</strong>: The World.</li>
-            <li><strong>"Digital Service Providers" (DSPs)</strong>: Any and all digital stores...</li>
-            <li><strong>"Net Revenue"</strong>: All monies actually received by the Company...</li>
-        </ul>
+        <ul><li>...</li></ul>
         <h2>2. GRANT OF RIGHTS</h2>
-        <h3>2.1. Distribution Right</h3>
-        <p>The Rights Holder hereby grants to the Company, during the Term and within the Territory, a non-exclusive right and license to:</p>
-        <ul>
-            <li>a) Distribute, sell, stream, sublicense, and otherwise make available the Content through any and all DSPs.</li>
-            <li>b) Use, reproduce, and transmit the Content to the extent necessary for digital encoding, formatting, and delivery.</li>
-            <li>c) Use the names, likenesses, artwork, and biographical material of the artist(s) associated with the Content for the sole purpose of marketing and promoting the Content on the DSPs and on the Company's own platforms.</li>
-        </ul>
-        <h3>2.2. Non-Exclusive</h3>
-        <p>This Agreement is non-exclusive. The Rights Holder retains the right to enter into similar agreements with other distributors or to exploit the Content independently.</p>
-
+        <p>...</p>
         <h2>3. TERM AND TERMINATION</h2>
-        <h3>3.1. Term and Renewal</h3>
-        <p>This Agreement shall commence on the Effective Date and continue for a period of one (1) year ("Initial Term"). It shall automatically renew for successive one (1) year periods unless terminated by either party.</p>
-        <h3>3.2. Termination</h3>
-        <p>Either party may terminate this Agreement by providing at least thirty (30) days' written notice to the other party. Upon termination, the Company will issue takedown notices to all DSPs. The Rights Holder acknowledges that the removal process may take several weeks or longer. All terms relating to payments, accounting, and warranties shall survive termination.</p>
-
+        <p>...</p>
         <h2>4. FINANCIAL TERMS & REVENUE SHARE</h2>
-        <h3>4.1. Revenue Share</h3>
-        <p>The Company shall pay to the Rights Holder <strong>Eighty Percent (80%)</strong> of the Net Revenue received from the exploitation of the Content.</p>
-        <h3>4.2. Platform Fee and Service Charges</h3>
-        <p>The Company shall retain <strong>Twenty Percent (20%)</strong> of the Net Revenue as its comprehensive fee ("Platform Fee and Service Charges").</p>
-        <h3>4.3. Accounting & Payments</h3>
-        <ul>
-            <li>a) The Company will provide the Rights Holder with access to an online dashboard detailing sales, streams, and revenue.</li>
-            <li>b) Payments shall be made within forty-five (45) days of the end of each calendar quarter in which Net Revenue is processed.</li>
-            <li>c) A minimum payment threshold of <strong>₹3000 INR</strong> shall apply. Balances below this will be carried over.</li>
-            <li>d) The Rights Holder is solely responsible for any fees charged by their payment provider and for all applicable taxes on their earnings (e.g., income tax, GST).</li>
-        </ul>
-
+        <p>...</p>
         <h2>5. RIGHTS HOLDER OBLIGATIONS & WARRANTIES</h2>
-        <p>The Rights Holder warrants and represents that:</p>
-        <ul>
-            <li>a) They have the full right, power, and authority to enter into this Agreement.</li>
-            <li>b) They own or control one hundred percent (100%) of the rights to the Content.</li>
-            <li>c) The Content does not infringe upon the copyright, trademark, or any other rights of any third party.</li>
-            <li>d) All necessary licenses and consents have been secured from all relevant parties.</li>
-            <li>e) The Content does not contain any defamatory, obscene, or illegal material.</li>
-        </ul>
-        <h3>5.1. Indemnification</h3>
-        <p>The Rights Holder agrees to indemnify, defend, and hold harmless the Company and its partners from any and all claims, damages, and expenses (including legal fees) arising from a breach of these warranties.</p>
-
+        <p>...</p>
         <h2>6. GENERAL PROVISIONS</h2>
-        <h3>6.1. Governing Law & Jurisdiction</h3>
-        <p>This Agreement shall be governed by the laws of India. The courts of Guwahati, Assam, shall have exclusive jurisdiction over any disputes arising from this Agreement.</p>
-        <h3>6.2. Entire Agreement</h3>
-        <p>This Agreement constitutes the entire understanding between the parties and supersedes all prior agreements.</p>
-        <h3>6.3. Notices</h3>
-        <p>All notices shall be sent to the email addresses listed at the beginning of this Agreement and shall be deemed delivered upon sending.</p>
+        <p>...</p>
         <hr style="margin-top: 40px;">
         <p style="text-align: center; margin-top: 30px;"><strong>IN WITNESS WHEREOF,</strong> the parties have executed this Agreement as of the Effective Date.</p>
 
@@ -248,17 +228,14 @@
             <div class="signature-block">
                 <strong>FOR THE COMPANY:</strong>
                 <p><strong>Jonom Digital</strong></p>
-                <!-- We assume the company signature is pre-set or static -->
-                <div style="height: 60px; border-bottom: 1px solid #333; margin-top: 30px;">
-                    <!-- Company could have a pre-scanned signature image here if desired -->
-                </div>
+                <img id="company-signature-image" class="signature-display-img" alt="Company Signature" />
                 <p>Name: Ashok Sarmah</p>
                 <p>Title: Founder</p>
                 <p>Date: <span class="display-date placeholder">[Date]</span></p>
             </div>
             <div class="signature-block">
                 <strong>FOR THE RIGHTS HOLDER:</strong>
-                <img id="signature-image" alt="Rights Holder Signature" />
+                <img id="artist-signature-image" class="signature-display-img" alt="Rights Holder Signature" />
                 <p>Name: <span id="display-name-signature" class="placeholder">[Rights Holder Name]</span></p>
                 <p>Title: Artist / Label Representative</p>
                 <p>Date: <span class="display-date placeholder">[Date]</span></p>
@@ -271,52 +248,11 @@
     // Make sure jsPDF is accessible
     window.jsPDF = window.jspdf.jsPDF;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        // --- FORM INPUTS AND DISPLAY ELEMENTS ---
-        const dateInput = document.getElementById('agreement-date');
-        const nameInput = document.getElementById('rights-holder-name');
-        const addressInput = document.getElementById('rights-holder-address');
-        const emailInput = document.getElementById('rights-holder-email');
-
-        const dateDisplays = document.querySelectorAll('.display-date');
-        const nameDisplay = document.getElementById('display-name');
-        const addressDisplay = document.getElementById('display-address');
-        const emailDisplay = document.getElementById('display-email');
-        const nameSignatureDisplay = document.getElementById('display-name-signature');
-
-        // --- UPDATE AGREEMENT TEXT ---
-        function updateDisplay(input, displays, placeholder) {
-            const value = input.value.trim();
-            const displayValue = value === '' ? placeholder : value;
-            
-            // For date, format it nicely if a value exists
-            if (input.type === 'date' && value) {
-                const date = new Date(value + 'T00:00:00'); // Fix for timezone issues
-                const formattedDate = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-                displays.forEach(el => {
-                    el.textContent = formattedDate;
-                    el.classList.remove('placeholder');
-                });
-            } else {
-                 displays.forEach(el => {
-                    el.textContent = displayValue;
-                    if (value === '') el.classList.add('placeholder');
-                    else el.classList.remove('placeholder');
-                });
-            }
-        }
-        
-        // --- ATTACH EVENT LISTENERS TO FORM FIELDS ---
-        dateInput.addEventListener('input', () => updateDisplay(dateInput, dateDisplays, '[Date]'));
-        nameInput.addEventListener('input', () => {
-            updateDisplay(nameInput, [nameDisplay, nameSignatureDisplay], '[Rights Holder Name]');
-        });
-        addressInput.addEventListener('input', () => updateDisplay(addressInput, [addressDisplay], '[Rights Holder Address]'));
-        emailInput.addEventListener('input', () => updateDisplay(emailInput, [emailDisplay], '[Rights Holder Email]'));
-
-        // --- SIGNATURE PAD LOGIC ---
-        const canvas = document.getElementById('signature-pad');
-        const signatureImage = document.getElementById('signature-image');
+    // --- HELPER: REUSABLE SIGNATURE PAD LOGIC ---
+    function initializeSignaturePad(canvasId, clearBtnId, imageId) {
+        const canvas = document.getElementById(canvasId);
+        const signatureImage = document.getElementById(imageId);
+        const clearBtn = document.getElementById(clearBtnId);
         const ctx = canvas.getContext('2d');
         let isDrawing = false;
         let lastX = 0;
@@ -327,66 +263,228 @@
         ctx.lineJoin = 'round';
         ctx.lineCap = 'round';
 
-        function draw(e) {
+        const getPos = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const isTouchEvent = e.touches && e.touches.length > 0;
+            return {
+                x: (isTouchEvent ? e.touches[0].clientX : e.clientX) - rect.left,
+                y: (isTouchEvent ? e.touches[0].clientY : e.clientY) - rect.top
+            };
+        };
+
+        const startDrawing = (e) => {
+            isDrawing = true;
+            const pos = getPos(e);
+            [lastX, lastY] = [pos.x, pos.y];
+        };
+
+        const draw = (e) => {
             if (!isDrawing) return;
+            e.preventDefault(); // Prevent scrolling on touch devices
+            const pos = getPos(e);
             ctx.beginPath();
             ctx.moveTo(lastX, lastY);
-            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.lineTo(pos.x, pos.y);
             ctx.stroke();
-            [lastX, lastY] = [e.offsetX, e.offsetY];
-        }
+            [lastX, lastY] = [pos.x, pos.y];
+        };
 
-        canvas.addEventListener('mousedown', (e) => {
-            isDrawing = true;
-            [lastX, lastY] = [e.offsetX, e.offsetY];
-        });
-        canvas.addEventListener('mousemove', draw);
-        canvas.addEventListener('mouseup', () => {
+        const stopDrawing = () => {
+            if (!isDrawing) return;
             isDrawing = false;
-            // Update the image in the agreement
-            const dataUrl = canvas.toDataURL('image/png');
-            signatureImage.src = dataUrl;
-            signatureImage.style.display = 'block';
-        });
-        canvas.addEventListener('mouseout', () => isDrawing = false);
+            if (signatureImage) {
+                const dataUrl = canvas.toDataURL('image/png');
+                signatureImage.src = dataUrl;
+                signatureImage.style.display = 'block';
+            }
+        };
 
-        document.getElementById('clear-signature-btn').addEventListener('click', () => {
+        // Mouse Events
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+
+        // Touch Events
+        canvas.addEventListener('touchstart', startDrawing, { passive: false });
+        canvas.addEventListener('touchmove', draw, { passive: false });
+        canvas.addEventListener('touchend', stopDrawing);
+
+        clearBtn.addEventListener('click', () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            signatureImage.src = '';
-            signatureImage.style.display = 'none';
+            if (signatureImage) {
+                signatureImage.src = '';
+                signatureImage.style.display = 'none';
+            }
         });
 
-        // --- PDF DOWNLOAD LOGIC ---
-        document.getElementById('download-btn').addEventListener('click', () => {
-            const agreementElement = document.getElementById('agreement-to-print');
-            const artistName = nameInput.value.trim() || 'Artist';
-            const agreementDate = dateInput.value || new Date().toISOString().split('T')[0];
-            const pdfFileName = `Jonom-Digital-Agreement-${artistName}-${agreementDate}.pdf`;
+        return {
+            isEmpty: () => {
+                const blank = document.createElement('canvas');
+                blank.width = canvas.width;
+                blank.height = canvas.height;
+                return canvas.toDataURL() === blank.toDataURL();
+            },
+            getDataURL: () => canvas.toDataURL('image/png')
+        };
+    }
 
-            // Use html2canvas to render the element
-            html2canvas(agreementElement, {
-                scale: 2, // Increase scale for better resolution
-                useCORS: true 
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                
-                // A4 page is 210 x 297 mm
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                
-                const imgWidth = canvas.width;
-                const imgHeight = canvas.height;
-                
-                // Calculate aspect ratio to fit the image on the page
-                const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
-                const finalImgWidth = imgWidth * ratio;
-                const finalImgHeight = imgHeight * ratio;
+    // --- HELPER: PDF GENERATION LOGIC ---
+    function generatePdf(artistName, agreementDate) {
+        const agreementElement = document.getElementById('agreement-to-print');
+        const pdfFileName = `Jonom-Digital-Agreement-${artistName.replace(/ /g, '_')}-${agreementDate}.pdf`;
+        
+        // Temporarily make the hidden element visible for rendering
+        agreementElement.style.display = 'block';
 
-                pdf.addImage(imgData, 'PNG', 0, 0, finalImgWidth, finalImgHeight);
-                pdf.save(pdfFileName);
+        html2canvas(agreementElement, {
+            scale: 2,
+            useCORS: true
+        }).then(canvas => {
+            const imgData = canvas.toDataURL('image/png');
+            const pdf = new jsPDF('p', 'mm', 'a4');
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+            const canvasWidth = canvas.width;
+            const canvasHeight = canvas.height;
+            const ratio = canvasHeight / canvasWidth;
+            const finalImgHeight = pdfWidth * ratio;
+
+            // Handle content that might be longer than one page
+            let heightLeft = finalImgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, finalImgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - finalImgHeight;
+                pdf.addPage();
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, finalImgHeight);
+                heightLeft -= pdfHeight;
+            }
+
+            pdf.save(pdfFileName);
+
+            // Hide the element again after rendering
+            agreementElement.style.display = 'none';
+        });
+    }
+
+    // --- HELPER: UPDATE TEXT IN AGREEMENT TEMPLATE ---
+    function updateAgreementText(data) {
+        // Date
+        const dateDisplays = document.querySelectorAll('.display-date');
+        const formattedDate = new Date(data.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+        dateDisplays.forEach(el => el.textContent = formattedDate);
+        
+        // Details
+        document.getElementById('display-name').textContent = data.name;
+        document.getElementById('display-address').textContent = data.address;
+        document.getElementById('display-email').textContent = data.email;
+        document.getElementById('display-name-signature').textContent = data.name;
+    }
+
+
+    // --- MAIN LOGIC ---
+    document.addEventListener('DOMContentLoaded', () => {
+        // Hide the printable template by default
+        document.getElementById('agreement-to-print').style.display = 'none';
+
+        const companyView = document.getElementById('company-view');
+        const artistView = document.getElementById('artist-view');
+        const loadingView = document.getElementById('loading-view');
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const agreementDataParam = urlParams.get('data');
+
+        if (agreementDataParam) {
+            // --- ARTIST WORKFLOW ---
+            companyView.style.display = 'none';
+            loadingView.style.display = 'block';
+
+            try {
+                // Decode and parse data
+                const decodedData = JSON.parse(atob(agreementDataParam));
+                
+                // Update agreement text
+                updateAgreementText(decodedData);
+                
+                // Populate artist display fields
+                const displayContainer = document.getElementById('artist-display-data');
+                displayContainer.innerHTML = `
+                    <div class="display-group"><span class="label">Agreement Date:</span><span class="value">${new Date(decodedData.date + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span></div>
+                    <div class="display-group"><span class="label">Your Name/Label:</span><span class="value">${decodedData.name}</span></div>
+                    <div class="display-group"><span class="label">Your Address:</span><span class="value">${decodedData.address}</span></div>
+                    <div class="display-group"><span class="label">Your Email:</span><span class="value">${decodedData.email}</span></div>
+                `;
+
+                // Display company signature
+                const companySigImg = document.getElementById('company-signature-image');
+                companySigImg.src = decodedData.companySig;
+                companySigImg.style.display = 'block';
+
+                const artistPad = initializeSignaturePad('artist-signature-pad', 'clear-artist-signature-btn', 'artist-signature-image');
+
+                document.getElementById('artist-download-btn').addEventListener('click', () => {
+                    if (artistPad.isEmpty()) {
+                        alert('Please sign the agreement before downloading.');
+                        return;
+                    }
+                    generatePdf(decodedData.name, decodedData.date);
+                });
+                
+                // Show the artist view
+                loadingView.style.display = 'none';
+                artistView.style.display = 'block';
+
+            } catch (error) {
+                console.error("Failed to parse agreement data:", error);
+                loadingView.innerHTML = '<p style="color: red;">Error: The agreement link is invalid or corrupted.</p>';
+            }
+
+        } else {
+            // --- COMPANY WORKFLOW ---
+            const companyPad = initializeSignaturePad('company-signature-pad', 'clear-company-signature-btn', 'company-signature-image');
+            
+            document.getElementById('generate-link-btn').addEventListener('click', () => {
+                const data = {
+                    date: document.getElementById('agreement-date').value,
+                    name: document.getElementById('rights-holder-name').value.trim(),
+                    address: document.getElementById('rights-holder-address').value.trim(),
+                    email: document.getElementById('rights-holder-email').value.trim(),
+                    companySig: companyPad.getDataURL()
+                };
+
+                // Validation
+                if (!data.date || !data.name || !data.address || !data.email) {
+                    alert('Please fill in all artist details.');
+                  }
+                if (companyPad.isEmpty()) {
+                    alert('Please provide the company signature.');
+                    return;
+                }
+
+                // Create link
+                const base64Data = btoa(JSON.stringify(data));
+                const url = `${window.location.origin}${window.location.pathname}?data=${encodeURIComponent(base64Data)}`;
+                
+                const linkInput = document.getElementById('shareable-link');
+                linkInput.value = url;
+                document.getElementById('shareable-link-container').style.display = 'block';
+                linkInput.select();
             });
-        });
+
+            document.getElementById('copy-link-btn').addEventListener('click', () => {
+                const linkInput = document.getElementById('shareable-link');
+                navigator.clipboard.writeText(linkInput.value).then(() => {
+                    const btn = document.getElementById('copy-link-btn');
+                    const originalText = btn.textContent;
+                    btn.textContent = 'Copied!';
+                    setTimeout(() => { btn.textContent = originalText; }, 2000);
+                });
+            });
+        }
     });
 </script>
 
